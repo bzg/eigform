@@ -1,0 +1,8 @@
+.nrepl-port
+.lein-env
+.lein-repl-history
+.lein-failures
+profiles.clj
+target/
+log/
+resources/public/exports/

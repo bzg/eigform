@@ -12,6 +12,7 @@
             [hiccup.page :as h]
             [hiccup.element :as he]
             [eigform.config :refer :all]
+            [clojure.data.csv :as data-csv]
             [clojure.java.io :as io]
             [clojure.core.async :as async])
   (:import [java.io File]))
@@ -48,7 +49,7 @@
      [:section {:id "form"}
       [:div {:class "container"}
        [:div {:class "form-container"}
-        [:form {:action "#" :method "post" :enctype "multipart/form-data"}
+        [:form {:action "/file" :method "post" :enctype "multipart/form-data"}
          [:div {:class "form-group"}
           [:label {:for "nom"} "Nom :"]
           [:input {:placeholder "Proust"
@@ -69,9 +70,9 @@
           [:input {:type "submit" :value "Envoyer"}]]]]]]]
     [:footer {:class "footer" :role "contentinfo"}
      [:div {:class "footer__logo"}
-      [:img {:src "images/etalab.svg" :alt "Logo Etalab"}]]]]))
+      [:img {:src "" :alt "Logo Etalab"}]]]]))
 
-(defn result-page [email file]
+(defn result-page [email pdf-file]
   (h/html5
    {:lang "fr"}
    [:head
@@ -84,9 +85,9 @@
    [:body
     [:div {:class "container"}
      [:h1 "Merci !"]
-     [:p (str "Nous avons envoyé un email à " email " pour accuser bonne réception de votre candidature avec le fichier : " file)]]]))
+     [:p (str "Nous avons envoyé un email à " email " pour accuser bonne réception de votre candidature avec le fichier : " pdf-file)]]]))
 
-(defn send-mail [email file]
+(defn send-mail [{:keys [email csv-file pdf-file pdf-path]}]
   (postal/send-message
    {:host "smtp.mailgun.org"
     :port 587
@@ -95,25 +96,29 @@
    {:from    "postmaster@eig-forever.org"
     :to      email
     :subject "Accusé réception de votre candidature"
-    :body    (str "Bonjour,
+    :body    [{:type    "text/plain; charset=utf-8"
+               :content (str "Bonjour,
 
-merci pour votre candidature EIG.
+merci pour votre candidature EIG !
 
-Votre nom de fichier : " file "
+Votre nom de fichier (joint) : " pdf-file "
 
 -- 
- L'équipe EIG")}))
+ L'équipe EIG")}
+              {:type         :attachment
+               :content      csv-file
+               :content-type "application/csv"}
+              {:type         :attachment
+               :content      pdf-path
+               :content-type "application/pdf"}]}))
 
 (def email-channel (async/chan 10))
 
 (defn start-email-loop []
   (async/go
     (loop [message (async/<! email-channel)]
-      (try
-        (send-mail (:email message) (:file message))
-        (catch Throwable e
-          ;; FIXME (logger/error ...)
-          ))
+      (try (send-mail message)
+           (catch Throwable e)) ;; FIXME: better log
       (recur (async/<! email-channel)))))
 
 (defn- html-response [body]
@@ -121,15 +126,28 @@ Votre nom de fichier : " file "
    :headers {"Content-Type" "text/html"}
    :body    body})
 
+(defn to-csv-file
+  "Write csv data, a vector, to a csv file."
+  [csv-data file]
+  (with-open [out-file (io/writer file)]
+    (data-csv/write-csv out-file csv-data)))
+
 (defroutes app-routes
   (GET "/" [] (home-page))
-  ;; FIXME: [email file :as param {params :params}]?
   (POST "/file" [nom prenom email file]
-        (let [file-name (:filename file)]
+        (let [pdf-file      (:filename file)
+              pdf-temp-file (:tempfile file)
+              pdf-path      (str "/tmp/" pdf-file)
+              csv-file      (str "/tmp/" nom "-" prenom ".csv")]
+          (to-csv-file [[nom prenom email pdf-file]] csv-file)
+          (io/copy pdf-temp-file (java.io.File. pdf-path))
           (async/go
             (async/>!
-             email-channel {:email email :file file-name}))
-          (html-response (result-page email file-name))))
+             email-channel {:email    email
+                            :csv-file csv-file
+                            :pdf-file pdf-file
+                            :pdf-path pdf-path}))
+          (html-response (result-page email pdf-file))))
   (route/resources "/")
   (route/not-found "404 error"))
 
@@ -140,8 +158,5 @@ Votre nom de fichier : " file "
              multipart-params/wrap-multipart-params))
 
 (defn -main [& args]
-  (do
-    (start-email-loop)
-    (http-kit/run-server #'app {:port (port) :max-body 1000000000})))
-
-
+  (do (start-email-loop)
+      (http-kit/run-server #'app {:port (port) :max-body 1000000000})))

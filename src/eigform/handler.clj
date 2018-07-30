@@ -30,11 +30,11 @@
    [:body
     [:header {:class "navbar" :role "navigation"}
      [:div {:class "navbar__container"}
-      [:a {:href "http://eig.com" :class "navbar__home"} "Accueil"]
+      [:a {:href "https://etalab.gouv.fr" :class "navbar__home"} "Accueil"]
       [:nav
        [:ul {:class "nav__links"}
-        [:li {:class "nav__item"} [:a {:href "http://eig.com"} "Lien 1"]]
-        [:li {:class "nav__item"} [:a {:href "http://eig.com"} "Lien 2"]]]]]]
+        [:li {:class "nav__item"} [:a {:href "https://etalab.gouv.fr"} "Lien 1"]]
+        [:li {:class "nav__item"} [:a {:href "https://etalab.gouv.fr"} "Lien 2"]]]]]]
     [:main {:role "main"}
      [:section {:class "section-color"}
       [:div {:class "container"}

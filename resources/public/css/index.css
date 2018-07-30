@@ -1,11 +1,7 @@
-/* input {margin:.2em} */
-
 body {
-    font-size: 12pt;
+    font-size: 16pt;
 }
 
-@media (min-width: 1200px) {
-    .container{
-        max-width: 900px;
-    }
+.form-container {
+    width: 100%;
 }

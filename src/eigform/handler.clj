@@ -24,33 +24,52 @@
     [:meta {:charset "utf-8"}]
     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
     (h/include-css
-     "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-     "css/index.css")]
+     "https://unpkg.com/template.data.gouv.fr/dist/style/main.css"
+     "css/index.css"
+     )]
    [:body
-    [:div {:class "container"}
-     [:h1 "Candidature EIG"]
-     [:p "Un paragraphe d'explication."]
-     [:h2 "Qui êtes-vous ?"]
-     [:form
-      {:action "/file" :method "post" :enctype "multipart/form-data"}
-      [:label "Nom :"]
-      [:div {:class "form-group"}
-       [:input {:placeholder "Proust"
-                :class       "form-control" :name "nom" :size "100" :autofocus true}]]
-      [:label "Prénom :"]
-      [:div {:class "form-group"}
-       [:input {:placeholder "Marcel"
-                :class       "form-control" :name "prenom" :size "100"}]]
-      [:label "Adresse de courriel :"]
-      [:div {:class "form-group"}
-       [:input {:placeholder "bzg@bzg.fr"
-                :class       "form-control" :name "email" :size "100" :type "email" :required true}]]
-      [:label "Votre CV (pdf) :"]
-      [:div {:class "form-group"}
-       [:input {:name   "file" :type "file" :size "200" :required true
-                :accept "application/pdf"}]]
-      [:div {:class "form-group"}
-       [:input {:type "submit" :value "Envoyer" :class "btn btn-danger btn-lg pull-right"}]]]]]))
+    [:header {:class "navbar" :role "navigation"}
+     [:div {:class "navbar__container"}
+      [:a {:href "http://eig.com" :class "navbar__home"} "Accueil"]
+      [:nav
+       [:ul {:class "nav__links"}
+        [:li {:class "nav__item"} [:a {:href "http://eig.com"} "Lien 1"]]
+        [:li {:class "nav__item"} [:a {:href "http://eig.com"} "Lien 2"]]]]]]
+    [:main {:role "main"}
+     [:section {:class "section-color"}
+      [:div {:class "container"}
+       [:h2 {:class "section-title"} "Titre de section"]
+       [:p {:class "section-subtitle"} "Sous-titre de section"]
+       [:div {:class "row"}
+        ;; [:p "Un paragraphe pour cette section."]
+        ;; [:p "Un paragraphe pour cette section."]
+        ;; [:p "Un paragraphe pour cette section."]
+        ]]]
+     [:section {:id "form"}
+      [:div {:class "container"}
+       [:div {:class "form-container"}
+        [:form {:action "#" :method "post" :enctype "multipart/form-data"}
+         [:div {:class "form-group"}
+          [:label {:for "nom"} "Nom :"]
+          [:input {:placeholder "Proust"
+                   :class       "form-control" :name "nom" :size "200" :autofocus true}]]
+         [:div {:class "form-group"}
+          [:label {:for "prenom"} "Prénom :"]
+          [:input {:placeholder "Marcel"
+                   :class       "form-control" :name "prenom" :size "200"}]]
+         [:div {:class "form-group"}
+          [:label {:for "email"} "Adresse de courriel :"]
+          [:input {:placeholder "bzg@bzg.fr"
+                   :class       "form-control" :name "email" :size "200" :type "email" :required true}]]
+         [:div {:class "form-group"}
+          [:label "Votre CV (pdf) :"]
+          [:input {:name   "file" :type "file" :size "200" :required true
+                   :accept "application/pdf"}]]
+         [:div {:class "form-group"}
+          [:input {:type "submit" :value "Envoyer"}]]]]]]]
+    [:footer {:class "footer" :role "contentinfo"}
+     [:div {:class "footer__logo"}
+      [:img {:src "images/etalab.svg" :alt "Logo Etalab"}]]]]))
 
 (defn result-page [email file]
   (h/html5
@@ -60,7 +79,7 @@
     [:meta {:charset "utf-8"}]
     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
     (h/include-css
-     "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+     "https://unpkg.com/template.data.gouv.fr/dist/style/main.css"
      "css/index.css")]
    [:body
     [:div {:class "container"}
@@ -97,13 +116,6 @@ Votre nom de fichier : " file "
           ))
       (recur (async/<! email-channel)))))
 
-;; (defn- handle-upload [actual-file dest-file dest-dir]
-;;   (io/copy actual-file (io/file dest-file))
-;;   (.mkdir (io/file dest-dir))
-;;   (export/unzip-file dest-file dest-dir)
-;;   (io/delete-file (io/file dest-file))
-;;   (gertrude/create-dirs-and-mv-files dest-dir))
-
 (defn- html-response [body]
   {:status  200
    :headers {"Content-Type" "text/html"}
@@ -113,20 +125,7 @@ Votre nom de fichier : " file "
   (GET "/" [] (home-page))
   ;; FIXME: [email file :as param {params :params}]?
   (POST "/file" [nom prenom email file]
-        (let [file-name (:filename file)
-              ;; actual-file (:tempfile file)
-              ;; rel-dir     (str (java.util.UUID/randomUUID) "/")
-              ;; dest-file   (str (export-dir) file-name)
-              ;; dest-dir    (str (export-dir) rel-dir)
-              ]
-          ;; (handle-upload actual-file dest-file dest-dir)
-          ;; (gertrude/to-csv-file (str dest-dir "AllEntities.xml")
-          ;;                       (str dest-dir "index.csv"))
-          ;; (export/export-index-csv dest-dir "index.csv"
-          ;;                          {:title                title
-          ;;                           :gertrude-diff-prefix url-diff
-          ;;                           :href                 url
-          ;;                           :label                copyrights})
+        (let [file-name (:filename file)]
           (async/go
             (async/>!
              email-channel {:email email :file file-name}))

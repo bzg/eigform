@@ -1,0 +1,11 @@
+/* input {margin:.2em} */
+
+body {
+    font-size: 12pt;
+}
+
+@media (min-width: 1200px) {
+    .container{
+        max-width: 900px;
+    }
+}
